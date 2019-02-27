@@ -4,6 +4,8 @@
 # __author__ = 'jun'
 from numpy import *
 import operator
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 def classify0(inX, dataSet, labels, k):  # 算法本体
@@ -22,7 +24,7 @@ def classify0(inX, dataSet, labels, k):  # 算法本体
         classCount[voteIlabel] = classCount.get(voteIlabel, 0) + 1  # 标签+1
     # 排序
     sortedClassCount = sorted(classCount.items(), key=operator.itemgetter(1), reverse=True)  # 返回前k个中各个标签占了几个位置，从大到小排
-    print(sortedClassCount)
+    # print(sortedClassCount)
     return sortedClassCount[0][0]
 
 
@@ -43,5 +45,57 @@ def file2matrix(filename):  # 将文本转换为Numpy的矩阵和向量
 
 
 datingDataMat, datingLabels = file2matrix('datingTestSet2.txt')
-print(datingDataMat)
-print(datingLabels[0:20])
+
+
+# print(datingDataMat)
+# print(datingLabels[0:20])
+
+# 作图
+# fig = plt.figure()
+# ax = fig.add_subplot(111)#画是1*1中的第1个
+# ax.scatter(datingDataMat[:,1], datingDataMat[:,2], 15.0*array(datingLabels), 15.0*array(datingLabels))#第三个参数大小，第四个参数颜色
+# plt.show()
+
+def autoNorm(dataSet):  # 归一化
+    minVals = dataSet.min(0)  # 0代表列，1代表行，寻找每列最小值，值为1*3的矩阵
+    maxVals = dataSet.max(0)
+    ranges = maxVals - minVals
+    normDataSet = zeros(shape(dataSet))
+    m = dataSet.shape[0]
+    normDataSet = dataSet - tile(minVals, (m, 1))  # tile函数重复某个数组，dataset为1000*3，所以需要复制minVals
+    normDataSet = normDataSet / tile(ranges, (m, 1))
+    return normDataSet, ranges, minVals
+
+
+# normMat, ranges, minVals = autoNorm(datingDataMat)
+# print(normMat)
+
+def datingClassTest():  # 测试分类器正确率
+    hoRatio = 0.10  # 测试数据集占比
+    datingDataMat, datingLabels = file2matrix('datingTestSet2.txt')  # 读数据
+    normMat, ranges, minVals = autoNorm(datingDataMat)  # 归一化
+    m = normMat.shape[0]  # 获取列数
+    numTestVecs = int(m * hoRatio)  # 获取测试数量
+    errorCount = 0.0
+    for i in range(numTestVecs):
+        classifierResult = classify0(normMat[i, :], normMat[numTestVecs:m, :], datingLabels[numTestVecs:m],
+                                     20)  # 第i行数据根据剩下90%数据跑出来的结果
+        print("the classifier came back with: %d, the real answer is: %d" % (classifierResult, datingLabels[i]))
+        if (classifierResult != datingLabels[i]):
+            errorCount += 1.0
+    print("the total error rate is: %f" % (errorCount / float(numTestVecs)))
+
+
+def classifyPerson():
+    resultList = ['不喜欢', '有一点喜欢', '超喜欢']
+    percentTats = float(input('花在打游戏的时间占比：'))
+    iceCream = float(input('每年消耗的冰激凌公升数：'))
+    ffMiles = float(input('每年飞行的里程数：'))
+    datingDataMat, datingLabels = file2matrix('datingTestSet2.txt')
+    normMat, ranges, minVals = autoNorm(datingDataMat)
+    inArr = array([ffMiles, percentTats, iceCream])
+    classifierResult = classify0((inArr - minVals) / ranges, normMat, datingLabels, 3)
+    print("看起来你对这个人：", resultList[classifierResult - 1])
+
+
+classifyPerson()
