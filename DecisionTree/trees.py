@@ -3,6 +3,7 @@
 
 from math import log
 import operator
+import treePlotter
 
 
 def calcShannonEnt(dataSet):  # 熵越高越混乱
@@ -32,7 +33,7 @@ def createDataSet():
     return dataSet, labels
 
 
-myDat, labels = createDataSet()
+
 
 
 # a = calcShannonEnt(myDat)
@@ -121,5 +122,41 @@ no surfacing 有两个值0和1，
     循环结束，最终得到{'no surfacing': {0: 'no', 1: {'flippers': {0: 'no', 1: 'yes'}}}}
 '''
 
-mytree = createTree(myDat, labels)
-print(mytree)
+
+# mytree = createTree(myDat, labels)
+# print(mytree)
+
+def classify(inputTree, featLabels, testVec):  # 分类函数
+    # inutTree是决策树，featLabels是特征，testVec是数组
+    # testVec代表featLabels中分别是数组内容的特征时，返回的最终分类标签
+    # 例如featLabels= ['no surfacing', 'flippers'],testVec = [1,0]时代表：no surfacing=1  flippers=0时的分类标签是什么。
+    # 注意featLabels 和testVec的顺序是一一对应的
+    firstStr = list(inputTree.keys())[0]
+    secondDict = inputTree[firstStr]  # 拿到字典
+    # 将标签转换为索引
+    featIndex = featLabels.index(firstStr)  # firstStr 在featLabels中的位置（是第n个，决定了下方看testVec中的第几个特征标签）
+    for key in secondDict.keys():
+        if testVec[featIndex] == key:  # 定位到testVec中第n项
+            if type(secondDict[key]).__name__ == 'dict':
+                classLabel = classify(secondDict[key], featLabels, testVec)
+            else:
+                classLabel = secondDict[key]
+    return classLabel
+
+
+myDat, labels = createDataSet()
+
+
+# print(labels)
+# labels1 = ['no surfacing', 'flippers','head']
+# labels2 = [ 'flippers','no surfacing','head']
+#
+# myTree = treePlotter.retrieveTree(1)
+# print(myTree)
+#
+# print(classify(myTree,labels1,[1,0,1]))
+# print(classify(myTree,labels2,[1,0,1]))
+# print(classify(myTree,labels1,[1,1,0]))
+
+def storeTree(inputTree, filename):  # 存储决策树
+    pass
