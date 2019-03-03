@@ -3,7 +3,7 @@
 
 from math import log
 import operator
-import treePlotter
+import DecisionTree.treePlotter
 
 
 def calcShannonEnt(dataSet):  # 熵越高越混乱
@@ -151,12 +151,25 @@ myDat, labels = createDataSet()
 # labels1 = ['no surfacing', 'flippers','head']
 # labels2 = [ 'flippers','no surfacing','head']
 #
-# myTree = treePlotter.retrieveTree(1)
-# print(myTree)
+myTree = DecisionTree.treePlotter.retrieveTree(1)
+print(myTree)
 #
 # print(classify(myTree,labels1,[1,0,1]))
 # print(classify(myTree,labels2,[1,0,1]))
 # print(classify(myTree,labels1,[1,1,0]))
 
 def storeTree(inputTree, filename):  # 存储决策树
-    pass
+    import pickle
+    fw = open(filename, 'wb+')
+    pickle.dump(inputTree, fw)
+    fw.close()
+
+
+def grabTree(filename):  # 提取树
+    import pickle
+    fr = open(filename, 'rb')
+    return pickle.load(fr)
+
+    # storeTree(myTree,'classifierStorage.txt')
+    # a = grabTree('classifierStorage.txt')
+    # print(a)
