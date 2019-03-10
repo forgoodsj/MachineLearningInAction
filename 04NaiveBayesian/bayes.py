@@ -75,7 +75,7 @@ def trainNB0(trainMarix, trainCategory):
 def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1):
     # vec2Classify 要分类的向量（词条在词汇列表中是否出现的向量），以及3个概率
     p1 = sum(vec2Classify * p1Vec) + log(
-        pClass1)  # 理论上应该是概率相乘，因为怕小数相乘后得到0，所以取对数后相加。pclass1为词条本身为侮辱性词条的占比（侮辱词条/总词条）。原公式为p(ci|w)=p(w|ci)p(ci)/p(w) ，对这个公式取对数。
+            pClass1)  # 理论上应该是概率相乘，因为怕小数相乘后得到0，所以取对数后相加。pclass1为词条本身为侮辱性词条的占比（侮辱词条/总词条）。原公式为p(ci|w)=p(w|ci)p(ci)/p(w) ，对这个公式取对数。
     # ci为侮辱性词条的概率。
     # p(w|ci)为 单词在侮辱性词条中出现的概率。
     # w为所有单词，概率相乘
@@ -87,7 +87,7 @@ def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1):
         return 0
 
 
-def testingNB():
+def testingNB():  # 测试分类效果
     listOfPosts, listClasses = loadDataSet()
     myVocabList = createVocabList(listOfPosts)
     trainMat = []
@@ -102,4 +102,12 @@ def testingNB():
     print(testEntry, 'classified as: ', classifyNB(thisDoc, p0v, p1v, pAn))
 
 
-testingNB()
+# testingNB()
+
+def bagOfWords2VecMN(vocabList, inputSet):
+    # 词袋模型，每个单词可以出现多次
+    returnVec = [0] * len(vocabList)
+    for word in inputSet:
+        if word in vocabList:
+            returnVec[vocabList.index(word)] += 1
+    return returnVec
