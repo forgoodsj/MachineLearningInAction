@@ -129,7 +129,7 @@ class optStruct:
 
 
 def calcEk(oS, k):  # 计算E值并返回
-    fXk = float(multiply(oS.alphas, oS.labelMat).T * (oS.X * oS.X[k, :].T)) + oS.b
+    fXk = float(multiply(oS.alphas, oS.labelMat).T * oS.K[:, k] + oS.b)
     Ek = fXk - float(oS.labelMat[k])
     return Ek
 
@@ -178,7 +178,8 @@ def innerL(i, oS):  # 内循环
         if L == H:
             print("L==H")  # 不做任何变化，开始下个循环
             return 0
-        eta = 2.0 * oS.X[i, :] * oS.X[j, :].T - oS.X[i, :] * oS.X[i, :].T - oS.X[j, :] * oS.X[j, :].T  # alpha[j]的最优修改量
+        # eta = 2.0 * oS.X[i, :] * oS.X[j, :].T - oS.X[i, :] * oS.X[i, :].T - oS.X[j, :] * oS.X[j, :].T  # alpha[j]的最优修改量
+        eta = 2.0 * oS.K[i, j] - oS.K[i, i] - oS.K[j, j]
         if eta >= 0:
             print("eta>=0")
             return 0
@@ -190,10 +191,14 @@ def innerL(i, oS):  # 内循环
             return 0
         oS.alphas[i] += oS.labelMat[j] * oS.labelMat[i] * (alphaJold - oS.alphas[j])  # 对i进行修改，修改量与J相同，但相反
         updateEk(oS, i)
-        b1 = oS.b - Ei - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.X[i, :] * oS.X[i, :].T - oS.labelMat[j] * (
-        oS.alphas[j] - alphaJold) * oS.X[i, :] * oS.X[j, :].T
-        b2 = oS.b - Ej - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.X[i, :] * oS.X[j, :].T - oS.labelMat[j] * (
-            oS.alphas[j] - alphaJold) * oS.X[j, :] * oS.X[j, :].T
+        # b1 = oS.b - Ei - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.X[i, :] * oS.X[i, :].T - oS.labelMat[j] * (
+        # oS.alphas[j] - alphaJold) * oS.X[i, :] * oS.X[j, :].T
+        # b2 = oS.b - Ej - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.X[i, :] * oS.X[j, :].T - oS.labelMat[j] * (
+        #    oS.alphas[j] - alphaJold) * oS.X[j, :] * oS.X[j, :].T
+        b1 = oS.b - Ei - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.K[i, i] - oS.labelMat[j] * (
+            oS.alphas[j] - alphaJold) * oS.K[i, j]
+        b2 = oS.b - Ej - oS.labelMat[i] * (oS.alphas[i] - alphaIold) * oS.K[i, i] - oS.labelMat[j] * (
+            oS.alphas[j] - alphaJold) * oS.K[j, j]
         if (0 < oS.alphas[i]) and (oS.C > oS.alphas[i]):
             oS.b = b1
         elif (0 < oS.alphas[j]) and (oS.C > oS.alphas[j]):
@@ -231,12 +236,49 @@ def smoP(dataMatIn, classLabels, C, toler, maxIter, kTup=('lin', 0)):  # 完整�
     return oS.b, oS.alphas
 
 
+def calcWs(alphas, dataArr, classLabels):  # 基于alpha得到超平面，计算w。数据集中数据 datMat[i]*mat(ws)+b 如果小于0则属于-1类
+    X = mat(dataArr)
+    labelMat = mat(classLabels).transpose()
+    m, n = shape(X)
+    w = zeros((n, 1))
+    for i in range(m):
+        w += multiply(alphas[i] * labelMat[i], X[i, :].T)
+    return w
 
 
+def kernelTrans(X, A, kTup):
+    m, n = shape(X)
+    K = mat(zeros((m, 1)))
+    if kTup[0] == 'lin':
+        K = X * A.T
+    elif kTup[0] == 'rbf':
+        for j in range(m):
+            deltaRow = X[j, :] - A
+            K[j] = deltaRow * deltaRow.T
+        K = exp(K / (-1 * kTup[1] ** 2))  # 矩阵元素箭出发
+    else:
+        raise NameError('Houston We Have a Problem -- That Kernel is not recognized')
+    return K
 
 
-
+class optStruct:
+    def __init__(self, dataMatIn, classLabels, C, toler, kTup):  # kTup是包含核函数信息的元祖
+        self.X = dataMatIn
+        self.labelMat = classLabels
+        self.C = C
+        self.tol = toler
+        self.m = shape(dataMatIn)[0]
+        self.alphas = mat(zeros((self.m, 1)))
+        self.b = 0
+        self.eCache = mat(zeros((self.m, 2)))
+        self.K = mat(zeros((self.m, self.m)))
+        for i in range(self.m):
+            self.K[:, i] = kernelTrans(self.X, self.X[i,:] , kTup)
 
 dataArr, labelArr = loadDataSet('testSet.txt')
 b, alphas = smoP(dataArr, labelArr, 0.6, 0.001, 40)
-print(b,alphas)
+ws = calcWs(alphas, dataArr, labelArr)
+print(ws)
+datMat = mat(dataArr)
+print(datMat[13] * mat(ws) + b)
+print(labelArr[13])
